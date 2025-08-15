@@ -3,42 +3,28 @@
 #include "ui.h"
 #include "db.h"
 #define MAX_PASSW_LEN 30
-#define HELP 0
-#define ADD 1
-#define LIST 2
-#define DELETE 3
-#define MODIFY 4
+
 
 
 int create_master_password(){
-    printf("no passowrds\n");
+    printf("no passwords\n");
     return 0;
 }
 
 int determine_option(char *option){
-    if((((strncmp(option, "-h", 3) == 0) || (strncmp(option, "--help", 7) == 0)))) {
+    size_t option_len = strlen(option);
+    if((((strncmp(option, "-h", option_len) == 0) || (strncmp(option, "--help", option_len) == 0)))) {
         print_help();
         return 0;
     }
-    else if(strncmp(option, "-a", 3) == 0) {
-        print_help();
-        return 1;
-    }
-    else if(strncmp(option, "-l", 3) == 0) {
-        print_help();
-        return 2;
-    }
-    else if(strncmp(option, "-d", 3) == 0) {
-        print_help();
-        return 3;
-    }
-    else if(strncmp(option, "-m", 3) == 0) {
-        print_help();
-        return 4;
-    }
+    else if(strncmp(option, "-a", option_len) == 0) return add_password();
+    else if(strncmp(option, "-l", option_len) == 0) return list_password();
+    else if(strncmp(option, "-d", option_len) == 0) return delete_password();
+    else if(strncmp(option, "-m", option_len) == 0) return modify_password();
     else
     {
         printf("%s is not recognized as a command\n", option);
+        print_help();
         return -1;
     }
 }
@@ -54,23 +40,7 @@ int main(int argc, char *argv[]){
 
     if (is_new_user()) create_master_password();
     if(argc > 1){
-        switch (determine_option(argv[1]))
-        {
-        case HELP:
-            print_help();
-            break;
-        case ADD:
-            break;
-        case LIST:
-            break;
-        case DELETE:
-            break;
-        case MODIFY:
-            break;
-        default:
-            print_help();
-            break;
-        }
+       determine_option(argv[1]);
     }
     return 0;
 }

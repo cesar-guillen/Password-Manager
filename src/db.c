@@ -29,8 +29,7 @@ int is_new_user() {
 
     sqlite3_finalize(stmt);
     sqlite3_close(db);
-    if(count) return 1;
-    return 0;
+    return !count;
 }
 
 int add_password(){

@@ -4,6 +4,7 @@
 #include "ui.h"
 #include "crypto.h"
 #define MAX_INPUT_LENGTH 100
+#define AUTOGEN_PASS_LEN 20
 
 static int check_status(sqlite3 * db, int conn){
     if (conn != SQLITE_OK )
@@ -13,6 +14,29 @@ static int check_status(sqlite3 * db, int conn){
         return 1;
     }
     return 0;
+}
+
+static int service_exists(char *service){
+    sqlite3 *db;
+    int conn = sqlite3_open("data/database.db", &db);
+    if (check_status(db, conn) == 1) return 1;
+
+    const char *sql_qry = "SELECT COUNT(*) FROM passwords WHERE service = ?";
+    sqlite3_stmt *stmt;
+
+    conn = sqlite3_prepare_v2(db, sql_qry, -1, &stmt, NULL);
+    if (check_status(db, conn) == 1) return 1;
+
+    sqlite3_bind_text(stmt, 1, service, -1, SQLITE_STATIC);
+
+    int exits = 0;
+    if (sqlite3_step(stmt) == SQLITE_ROW) {
+        exits = sqlite3_column_int(stmt, 0);
+    }
+
+    sqlite3_finalize(stmt);
+    sqlite3_close(db);
+    return exits;
 }
 
 int is_new_user() {
@@ -55,11 +79,10 @@ int add_password(){
     read_line(password, sizeof(password));
     if (strlen(password) == 0)
     {
-        randomPasswordGeneration(16, password);
+        randomPasswordGeneration(AUTOGEN_PASS_LEN, password);
         printf("Auto generating password: %s\n", password);
     }
     
-
     sqlite3 *db;
     int conn = sqlite3_open("data/database.db", &db);
     if (check_status(db, conn) == 1) return 1;
@@ -135,37 +158,63 @@ int list_password() {
     return 0;
 }
 
-int delete_password(){
+int delete_password() {
     char service[MAX_INPUT_LENGTH];
     printf("Enter the service name of the password you would like to delete\n");
+    printf("Service: ");
     read_line(service, sizeof(service));
-
+    if (!service_exists(service))
+    {
+        printf("No password found for service '%s'.\n", service);
+        return 0;
+    }
+    
     sqlite3 *db;
     int conn = sqlite3_open("data/database.db", &db);
     if (check_status(db, conn) == 1) return 1;
 
-    const char *sql_qry ="DELETE FROM passwords WHERE service = ?;"
-    "VALUES (?)";
+    const char *sql_qry = "DELETE FROM passwords WHERE service = ?;";
     sqlite3_stmt *stmt;
 
     conn = sqlite3_prepare_v2(db, sql_qry, -1, &stmt, NULL);
     if (check_status(db, conn) == 1) return 1;
+
     sqlite3_bind_text(stmt, 1, service, -1, SQLITE_STATIC);
 
-    if (sqlite3_step(stmt) != SQLITE_DONE) {
-        fprintf(stderr, "Failed to delete data: %s\n", sqlite3_errmsg(db));
-    } else {
-        printf("Password deleted successfully!\n");
-    }
+    if (sqlite3_step(stmt) != SQLITE_DONE) fprintf(stderr, "Failed to delete data: %s\n", sqlite3_errmsg(db));
+    if (sqlite3_changes(db) > 0) printf("Password deleted successfully!\n");
+
 
     sqlite3_finalize(stmt);
     sqlite3_close(db);
     return 0;
-
-    return 0;
 }
 
-int modify_password(){
+int edit_password(char *service){return 0;}
+int edit_service(char *service){return 0;}
+int edit_username(char *service){return 0;}
+int edit_all(char *service){return 0;}
+
+int modify_entry(){
+    char service[MAX_INPUT_LENGTH];
+    char option[2];
+    printf("Enter which service password to modify: ");
+    read_line(service, sizeof(service));
+    if (!service_exists(service))
+    {
+        printf("No password found for service '%s'.\n", service);
+        return 0;
+    }
+    printf("Enter which parameter you would like to edit:\n"
+            "[A] All     [S] Service     [U] Username     [P] Password\n"
+            "Option: "
+    );
+    read_line(option, sizeof(option));
+    if (strncmp(option,"A",strlen(option)) == 0) return edit_all(service);
+    else if (strncmp(option,"S",strlen(option)) == 0) return edit_service(service);
+    else if (strncmp(option,"U",strlen(option)) == 0) return edit_username(service);
+    else if (strncmp(option,"P",strlen(option)) == 0) return edit_password(service);
+    else printf("Option is not recognized\n");
     return 0;
 }
 

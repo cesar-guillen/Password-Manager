@@ -3,8 +3,6 @@
 #include "ui.h"
 #include "db.h"
 
-
-
 int create_master_password(){
     printf("no passwords\n");
     return 0;
@@ -19,7 +17,7 @@ int determine_option(char *option){
     else if(strncmp(option, "-a", option_len) == 0) return add_password();
     else if(strncmp(option, "-l", option_len) == 0) return list_password();
     else if(strncmp(option, "-d", option_len) == 0) return delete_password();
-    else if(strncmp(option, "-m", option_len) == 0) return modify_password();
+    else if(strncmp(option, "-m", option_len) == 0) return modify_entry();
     else
     {
         printf("%s is not recognized as a command\n", option);

@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <sqlite3.h>
 #include "ui.h"
+#include "string.h"
 #define MAX_INPUT_LENGTH 100
 
 static int check_status(sqlite3 * db, int conn){
@@ -74,7 +75,52 @@ int add_password(){
     return 0;
 }
 
-int list_password(){
+int list_password() {
+    char service[MAX_INPUT_LENGTH];
+    printf("Enter the service name of the password (Leave blank to retrieve all)\n");
+    printf("Service: ");
+    read_line(service, sizeof(service));
+
+    sqlite3 *db;
+    int conn = sqlite3_open("data/database.db", &db);
+    if (check_status(db, conn) == 1) return 1;
+
+    const char *sql_all = "SELECT service, username, password, last_changed FROM passwords";
+    const char *sql_one = "SELECT service, username, password, last_changed FROM passwords WHERE service = ?";
+
+    sqlite3_stmt *stmt;
+
+    if (strlen(service) == 0) {
+        conn = sqlite3_prepare_v2(db, sql_all, -1, &stmt, NULL);
+    } else {
+        conn = sqlite3_prepare_v2(db, sql_one, -1, &stmt, NULL);
+        if (conn == SQLITE_OK) {
+            sqlite3_bind_text(stmt, 1, service, -1, SQLITE_STATIC);
+        }
+    }
+    if (check_status(db, conn) == 1) return 1;
+
+    printf("\n%-18s %-18s %-28s %-20s\n", "Service", "Username", "Password", "Last Changed");
+    printf("---------------------------------------------------------------------------------------\n");
+
+    while (sqlite3_step(stmt) == SQLITE_ROW) {
+        const unsigned char *svc = sqlite3_column_text(stmt, 0);
+        const unsigned char *usr = sqlite3_column_text(stmt, 1);
+        const unsigned char *pwd = sqlite3_column_text(stmt, 2);
+        const unsigned char *changed = sqlite3_column_text(stmt, 3);
+
+        printf("%-18s %-18s %-28s %-20s\n",
+               svc ? (const char *)svc : "",
+               usr ? (const char *)usr : "",
+               pwd ? (const char *)pwd : "",
+               changed ? (const char *)changed : "");
+        printf("---------------------------------------------------------------------------------------\n");
+        
+    }
+
+    sqlite3_finalize(stmt);
+    sqlite3_close(db);
+
     return 0;
 }
 

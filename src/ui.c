@@ -16,9 +16,9 @@ void print_help(){
             "Usage: ./passmgr [options]\n\n"
             "-h, --help          Display this help menu and exit\n"
             "-a                  Add a new password\n"
-            "-l  <name>          List a password, if left blank all passwords will be displayed\n"
-            "-d  <name>          Remove a password\n"
-            "-m  <name>          Edit a password\n"
+            "-l                  List a password\n"
+            "-d                  Remove a password\n"
+            "-m                  Edit a password\n"
             "\n"
     );
 }

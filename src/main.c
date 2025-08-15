@@ -1,33 +1,76 @@
 #include <stdio.h>
 #include <string.h>
+#include "ui.h"
+#include "db.h"
 #define MAX_PASSW_LEN 30
+#define HELP 0
+#define ADD 1
+#define LIST 2
+#define DELETE 3
+#define MODIFY 4
 
-void print_art(){
-    printf(
-            " ___                                  _   __ __                               \n"
-            "| . \\ ___  ___ ___ _ _ _  ___  _ _  _| | |  \\  \\ ___ ._ _  ___  ___  ___  _ _ \n"
-            "|  _/<_> |<_-<<_-<| | | |/ . \\| '_>/ . | |     |<_> || ' |<_> |/ . |/ ._>| '_>\n"
-            "|_|  <___|/__//__/|__/_/ \\___/|_|  \\___| |_|_|_|<___||_|_|<___|\\_. |\\___.|_|  \n"
-            "                                                               <___'          \n"
-    );
+
+int create_master_password(){
+    printf("no passowrds\n");
+    return 0;
 }
 
-void print_help(){
-    printf("Welcome to your interactive local password manager!\n\n");
-    printf(
-            "Usage: ./passmgr [options]\n\n"
-            "-h, --help          Display this help menu and exit\n"
-            "-a, --add           Add a new password\n"
-            "-l  <name>          List a password, if left blank all passwrds will be displayed\n"
-            "-d  <name>          Remove a password\n"
-            "-m  <name>          Edit a password\n"
-    );
-}
-
-int main(int argc, char *argv[]){
-    print_art();
-    if(argc == 1 || (argc > 1 && ((strncmp(argv[1], "-h", 3) == 0) || (strncmp(argv[1], "--help", 7) == 0)))) {
+int determine_option(char *option){
+    if((((strncmp(option, "-h", 3) == 0) || (strncmp(option, "--help", 7) == 0)))) {
         print_help();
         return 0;
     }
+    else if(strncmp(option, "-a", 3) == 0) {
+        print_help();
+        return 1;
+    }
+    else if(strncmp(option, "-l", 3) == 0) {
+        print_help();
+        return 2;
+    }
+    else if(strncmp(option, "-d", 3) == 0) {
+        print_help();
+        return 3;
+    }
+    else if(strncmp(option, "-m", 3) == 0) {
+        print_help();
+        return 4;
+    }
+    else
+    {
+        printf("%s is not recognized as a command\n", option);
+        return -1;
+    }
+}
+
+
+int main(int argc, char *argv[]){
+    print_art();
+    if (database_init() != 0) return 1;
+    if(argc == 1) {
+        print_help();
+        return 0;
+    }
+
+    if (is_new_user()) create_master_password();
+    if(argc > 1){
+        switch (determine_option(argv[1]))
+        {
+        case HELP:
+            print_help();
+            break;
+        case ADD:
+            break;
+        case LIST:
+            break;
+        case DELETE:
+            break;
+        case MODIFY:
+            break;
+        default:
+            print_help();
+            break;
+        }
+    }
+    return 0;
 }

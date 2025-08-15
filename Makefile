@@ -11,4 +11,4 @@ passmgr: $(OBJ)
 	$(CC) $(OBJ) -o passmgr $(LIBS)
 
 clean:
-	rm -f $(OBJ) passmgr
+	rm -f $(OBJ) passmgr data/database.db

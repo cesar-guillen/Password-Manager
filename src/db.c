@@ -125,6 +125,32 @@ int list_password() {
 }
 
 int delete_password(){
+    char service[MAX_INPUT_LENGTH];
+    printf("Enter the service name of the password you would like to delete\n");
+    read_line(service, sizeof(service));
+
+    sqlite3 *db;
+    int conn = sqlite3_open("data/database.db", &db);
+    if (check_status(db, conn) == 1) return 1;
+
+    const char *sql_qry ="DELETE FROM passwords WHERE service = ?;"
+    "VALUES (?)";
+    sqlite3_stmt *stmt;
+
+    conn = sqlite3_prepare_v2(db, sql_qry, -1, &stmt, NULL);
+    if (check_status(db, conn) == 1) return 1;
+    sqlite3_bind_text(stmt, 1, service, -1, SQLITE_STATIC);
+
+    if (sqlite3_step(stmt) != SQLITE_DONE) {
+        fprintf(stderr, "Failed to delete data: %s\n", sqlite3_errmsg(db));
+    } else {
+        printf("Password deleted successfully!\n");
+    }
+
+    sqlite3_finalize(stmt);
+    sqlite3_close(db);
+    return 0;
+
     return 0;
 }
 

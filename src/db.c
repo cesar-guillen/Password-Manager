@@ -1,7 +1,8 @@
 #include <stdio.h>
 #include <sqlite3.h>
+#include <string.h>
 #include "ui.h"
-#include "string.h"
+#include "crypto.h"
 #define MAX_INPUT_LENGTH 100
 
 static int check_status(sqlite3 * db, int conn){
@@ -40,14 +41,24 @@ int add_password(){
     char username[MAX_INPUT_LENGTH];
     char password[MAX_INPUT_LENGTH];
 
-    printf("Service name: ");
-    read_line(service, sizeof(service));
+    do
+    {
+        printf("(Required) Service name: ");
+        read_line(service, sizeof(service));
+    } while (strlen(service) == 0);
+    
 
     printf("Username: ");
     read_line(username, sizeof(username));
 
     printf("Password: ");
     read_line(password, sizeof(password));
+    if (strlen(password) == 0)
+    {
+        randomPasswordGeneration(16, password);
+        printf("Auto generating password: %s\n", password);
+    }
+    
 
     sqlite3 *db;
     int conn = sqlite3_open("data/database.db", &db);

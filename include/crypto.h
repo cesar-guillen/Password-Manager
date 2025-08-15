@@ -1,0 +1,1 @@
+void randomPasswordGeneration(int N, char *password);

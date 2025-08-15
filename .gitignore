@@ -3,3 +3,5 @@
 *.sqlite
 *.sqlite3
 /data/*
+*.o
+passmgr

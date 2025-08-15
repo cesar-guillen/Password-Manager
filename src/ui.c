@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <string.h>
 void print_art(){
     printf(
             " ___                                  _   __ __                               \n"
@@ -20,4 +21,17 @@ void print_help(){
             "-m  <name>          Edit a password\n"
             "\n"
     );
+}
+
+void read_line(char *buffer, size_t size) {
+    if (fgets(buffer, size, stdin)) {
+        size_t len = strlen(buffer);
+        if (len > 0 && buffer[len - 1] == '\n') {
+            buffer[len - 1] = '\0';
+        } else {
+            // No newline → there are leftover chars in stdin → flush them
+            int c;
+            while ((c = getchar()) != '\n' && c != EOF);
+        }
+    }
 }

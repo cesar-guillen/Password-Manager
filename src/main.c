@@ -2,7 +2,6 @@
 #include <string.h>
 #include "ui.h"
 #include "db.h"
-#define MAX_PASSW_LEN 30
 
 
 
@@ -25,7 +24,7 @@ int determine_option(char *option){
     {
         printf("%s is not recognized as a command\n", option);
         print_help();
-        return -1;
+        return 0;
     }
 }
 
@@ -40,7 +39,7 @@ int main(int argc, char *argv[]){
 
     if (is_new_user()) create_master_password();
     if(argc > 1){
-       determine_option(argv[1]);
+       return determine_option(argv[1]);
     }
     return 0;
 }

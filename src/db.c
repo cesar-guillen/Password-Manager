@@ -70,12 +70,12 @@ int add_password(){
         printf("(Required) Service name: ");
         read_line(service, sizeof(service));
     } while (strlen(service) == 0);
-    
 
+    
     printf("Username: ");
     read_line(username, sizeof(username));
 
-    printf("Password: ");
+    printf("Password (Leave blank to autogenerate): ");
     read_line(password, sizeof(password));
     if (strlen(password) == 0)
     {
@@ -114,6 +114,12 @@ int list_password() {
     printf("Enter the service name of the password (Leave blank to retrieve all)\n");
     printf("Service: ");
     read_line(service, sizeof(service));
+
+    if (!service_exists(service) && strlen(service) > 0)
+    {
+        printf("No password found for service '%s'.\n", service);
+        return 0;
+    }
 
     sqlite3 *db;
     int conn = sqlite3_open("data/database.db", &db);
@@ -190,15 +196,104 @@ int delete_password() {
     return 0;
 }
 
-int edit_password(char *service){return 0;}
-int edit_service(char *service){return 0;}
-int edit_username(char *service){return 0;}
-int edit_all(char *service){return 0;}
+int edit_password(char *service){
+    char new_password[MAX_INPUT_LENGTH];
+    printf("Enter new password (Leave blank to autogenerate): ");
+    read_line(new_password, sizeof(new_password));
+    if (strlen(new_password) == 0)
+    {
+        randomPasswordGeneration(AUTOGEN_PASS_LEN, new_password);
+        printf("Auto generating password: %s\n", new_password);
+    }
+
+    sqlite3 *db;
+    int conn = sqlite3_open("data/database.db", &db);
+    if (check_status(db, conn) == 1) return 1;
+
+    const char *sql_qry = "UPDATE passwords SET password = ?, last_changed = DATETIME('now') WHERE service = ?;";
+    sqlite3_stmt *stmt;
+
+    conn = sqlite3_prepare_v2(db, sql_qry, -1, &stmt, NULL);
+    if (check_status(db, conn) == 1) return 1;
+    sqlite3_bind_text(stmt, 1, new_password, -1, SQLITE_STATIC);
+    sqlite3_bind_text(stmt, 2, service, -1, SQLITE_STATIC);
+
+    if (sqlite3_step(stmt) != SQLITE_DONE) fprintf(stderr, "Failed to update data: %s\n", sqlite3_errmsg(db));
+    if (sqlite3_changes(db) > 0) printf("Password modified successfully!\n");
+
+
+    sqlite3_finalize(stmt);
+    sqlite3_close(db);
+    return 0;
+}
+
+int edit_service(char *service){
+    char new_service[MAX_INPUT_LENGTH];
+
+    do
+    {
+        printf("Enter new service name: ");
+        read_line(new_service, sizeof(new_service));
+    } while (strlen(new_service) == 0);
+
+    sqlite3 *db;
+    int conn = sqlite3_open("data/database.db", &db);
+    if (check_status(db, conn) == 1) return 1;
+
+    const char *sql_qry = "UPDATE passwords SET service = ?, last_changed = DATETIME('now') WHERE service = ?;";
+    sqlite3_stmt *stmt;
+
+    conn = sqlite3_prepare_v2(db, sql_qry, -1, &stmt, NULL);
+    if (check_status(db, conn) == 1) return 1;
+    sqlite3_bind_text(stmt, 1, new_service, -1, SQLITE_STATIC);
+    sqlite3_bind_text(stmt, 2, service, -1, SQLITE_STATIC);
+
+    if (sqlite3_step(stmt) != SQLITE_DONE) fprintf(stderr, "Failed to update data: %s\n", sqlite3_errmsg(db));
+    if (sqlite3_changes(db) > 0) printf("Service modified successfully!\n");
+
+
+    sqlite3_finalize(stmt);
+    sqlite3_close(db);
+    return 0;
+}
+
+int edit_username(char *service){
+    char new_username[MAX_INPUT_LENGTH];
+    printf("Enter new username: ");
+    read_line(new_username, sizeof(new_username));
+
+    sqlite3 *db;
+    int conn = sqlite3_open("data/database.db", &db);
+    if (check_status(db, conn) == 1) return 1;
+
+    const char *sql_qry = "UPDATE passwords SET username = ?, last_changed = DATETIME('now') WHERE service = ?;";
+    sqlite3_stmt *stmt;
+
+    conn = sqlite3_prepare_v2(db, sql_qry, -1, &stmt, NULL);
+    if (check_status(db, conn) == 1) return 1;
+    sqlite3_bind_text(stmt, 1, new_username, -1, SQLITE_STATIC);
+    sqlite3_bind_text(stmt, 2, service, -1, SQLITE_STATIC);
+
+    if (sqlite3_step(stmt) != SQLITE_DONE) fprintf(stderr, "Failed to update data: %s\n", sqlite3_errmsg(db));
+    if (sqlite3_changes(db) > 0) printf("username modified successfully!\n");
+
+
+    sqlite3_finalize(stmt);
+    sqlite3_close(db);
+    return 0;
+}
+
+int edit_all(char *service){
+    edit_username(service);
+    edit_password(service);
+    edit_service(service);
+    return 0;
+}
 
 int modify_entry(){
     char service[MAX_INPUT_LENGTH];
     char option[2];
-    printf("Enter which service password to modify: ");
+    printf("Enter the service name for the entry you would like to modify: ");
     read_line(service, sizeof(service));
     if (!service_exists(service))
     {

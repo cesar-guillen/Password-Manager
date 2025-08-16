@@ -4,7 +4,6 @@
 #include "ui.h"
 #include "crypto.h"
 #define MAX_INPUT_LENGTH 100
-#define AUTOGEN_PASS_LEN 20
 
 static int check_status(sqlite3 * db, int conn){
     if (conn != SQLITE_OK )
@@ -59,6 +58,33 @@ int is_new_user() {
     sqlite3_close(db);
     return !count;
 }
+
+int store_hash(const char *salt, const char *hash){
+    sqlite3 *db;
+    int conn = sqlite3_open("data/database.db", &db);
+    if (check_status(db, conn) == 1) return 1;
+
+    const char *sql_qry ="INSERT INTO master (salt, master_password, last_changed) "
+    "VALUES (?, ?, DATETIME('now'))";
+    sqlite3_stmt *stmt;
+
+    conn = sqlite3_prepare_v2(db, sql_qry, -1, &stmt, NULL);
+    if (check_status(db, conn) == 1) return 1;
+
+    sqlite3_bind_text(stmt, 1, salt, -1, SQLITE_STATIC);
+    sqlite3_bind_text(stmt, 2, hash, -1, SQLITE_STATIC);
+
+    if (sqlite3_step(stmt) != SQLITE_DONE) {
+        fprintf(stderr, "Failed to insert data: %s\n", sqlite3_errmsg(db));
+    } else {
+        printf("Master password saved successfully!\n");
+    }
+
+    sqlite3_finalize(stmt);
+    sqlite3_close(db);
+    return 0;
+}
+
 
 int add_password(){
     char service[MAX_INPUT_LENGTH];
@@ -324,6 +350,10 @@ int database_init(){
     //table creation
     char *sql_qry = "CREATE TABLE IF NOT EXISTS passwords"
         "(id INTEGER PRIMARY KEY, service TEXT, username TEXT, password TEXT, last_changed TEXT);"; 
+    conn = sqlite3_exec(db, sql_qry, 0, 0, &err_msg);
+    if (check_status(db, conn) == 1) return 1;
+    sql_qry = "CREATE TABLE IF NOT EXISTS master"
+        "(id INTEGER PRIMARY KEY, salt TEXT, master_password TEXT, last_changed TEXT);"; 
     conn = sqlite3_exec(db, sql_qry, 0, 0, &err_msg);
     if (check_status(db, conn) == 1) return 1;
 

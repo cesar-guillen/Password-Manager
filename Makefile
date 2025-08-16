@@ -1,6 +1,6 @@
 CC = gcc
 CFLAGS = -Wall -Wextra -Iinclude
-LIBS = -lsqlite3 -lssl -lcrypto
+LIBS = -lsqlite3 -lssl -lcrypto -lm
 
 SRC = src/main.c src/db.c src/crypto.c src/ui.c
 OBJ = $(SRC:.c=.o)

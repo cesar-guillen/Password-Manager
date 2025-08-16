@@ -7,7 +7,7 @@
 #define MIN_ENTROPY 55
 
 int create_master_password(){
-    char master_pass[AUTOGEN_PASS_LEN];
+    char master_pass[MAX_INPUT_LENGTH];
     double pass_entropy = 0;
     printf("First time user detected. Please enter your master password:\n");
     read_line(master_pass, sizeof(master_pass));
@@ -24,14 +24,46 @@ int create_master_password(){
     unsigned char hash[HASH_LEN];
     if (generate_salt(salt) == 1) return 1;
     if (generate_hash(salt, hash, master_pass) == 1) return 1;
-    
-    char hex_salt[SALT_LEN * 2 + 1];
-    char hex_hash[HASH_LEN * 2 + 1];
+
+    char hex_salt[HEX_SALT_LEN];
+    char hex_hash[HEX_HASH_LEN];
     to_hex(salt, SALT_LEN, hex_salt);
     to_hex(hash, HASH_LEN, hex_hash);
 
-    store_hash(hex_salt, hex_hash);;
-    return 0;
+    return store_hash(hex_salt, hex_hash);
+}
+
+int verify_master_passwd(){
+    char master_pass[MAX_INPUT_LENGTH];
+    printf("Please enter your master password to continue:\n");
+    read_line(master_pass, sizeof(master_pass));
+
+    char hex_salt[HEX_SALT_LEN];
+    char hex_hash[HEX_HASH_LEN];
+    if (retreive_salt(hex_salt, HEX_SALT_LEN) == 1) return 1;
+    if (retreive_hash(hex_hash, HEX_HASH_LEN) == 1) return 1;
+
+    unsigned char salt[SALT_LEN];
+    if (from_hex(hex_salt, salt, SALT_LEN) < 0){
+        printf("Error unhexing salt\n");
+        return 1;
+    }
+
+    unsigned char hash_current[HASH_LEN];
+    if (generate_hash(salt, hash_current, master_pass) == 1) return 1;
+
+    char hex_hash_current[HEX_HASH_LEN];
+    to_hex(hash_current, HASH_LEN, hex_hash_current);
+    if (strncmp(hex_hash, hex_hash_current, strlen(hex_hash)) == 0)
+    {
+        printf("Master password is valid!\n");
+        return 0;
+    }
+    else
+    {
+        printf("Master password is not valid\n");
+        return 1;
+    }
 }
 
 int determine_option(char *option){
@@ -40,7 +72,8 @@ int determine_option(char *option){
         print_help();
         return 0;
     }
-    else if(strncmp(option, "-a", option_len) == 0) return add_password();
+    if(verify_master_passwd() == 1) return 1;
+    if(strncmp(option, "-a", option_len) == 0) return add_password();
     else if(strncmp(option, "-l", option_len) == 0) return list_password();
     else if(strncmp(option, "-d", option_len) == 0) return delete_password();
     else if(strncmp(option, "-m", option_len) == 0) return modify_entry();
@@ -61,7 +94,9 @@ int main(int argc, char *argv[]){
         return 0;
     }
 
-    if (is_new_user()) create_master_password();
+    if (is_new_user()){
+        if(create_master_password() == 1) return 1;
+    } 
     if(argc > 1){
        return determine_option(argv[1]);
     }

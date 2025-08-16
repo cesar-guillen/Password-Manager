@@ -72,6 +72,27 @@ double check_password_entropy(const char *password) {
     return length * (log((double)charset_size) / log(2.0));
 }
 
+int from_hex(const char *in, unsigned char *out, size_t out_len) {
+    size_t len = strlen(in);
+    if (len % 2 != 0) {
+        return -1;
+    }
+
+    size_t bytes = len / 2;
+    if (bytes > out_len) {
+        return -1;
+    }
+
+    for (size_t i = 0; i < bytes; i++) {
+        unsigned int byte;
+        if (sscanf(in + 2*i, "%2x", &byte) != 1) {
+            return -1;
+        }
+        out[i] = (unsigned char) byte;
+    }
+    return (int)bytes;
+}
+
 void to_hex(const unsigned char *in, size_t len, char *out) {
     for (size_t i = 0; i < len; i++) {
         sprintf(out + (i * 2), "%02x", in[i]);
@@ -88,11 +109,10 @@ int generate_salt(unsigned char *salt){
 }
 
 int generate_hash(unsigned char *salt, unsigned char *hash, const char *master_pass){
-
     if (!PKCS5_PBKDF2_HMAC(master_pass, strlen(master_pass),
                            salt, SALT_LEN,
                            100000, // iterations
-                           EVP_sha256(),
+                           EVP_sha512(),
                            HASH_LEN, hash)) {
         fprintf(stderr, "Error in PBKDF2\n");
         return 1;

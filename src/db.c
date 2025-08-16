@@ -3,7 +3,7 @@
 #include <string.h>
 #include "ui.h"
 #include "crypto.h"
-#define MAX_INPUT_LENGTH 100
+#include "db.h"
 
 static int check_status(sqlite3 * db, int conn){
     if (conn != SQLITE_OK )
@@ -43,7 +43,7 @@ int is_new_user() {
     int conn = sqlite3_open("data/database.db", &db);
     if (check_status(db, conn) == 1) return 1;
 
-    const char *sql_qry = "SELECT COUNT(*) FROM passwords";
+    const char *sql_qry = "SELECT COUNT(*) FROM master";
     sqlite3_stmt *stmt;
 
     conn = sqlite3_prepare_v2(db, sql_qry, -1, &stmt, NULL);
@@ -57,6 +57,74 @@ int is_new_user() {
     sqlite3_finalize(stmt);
     sqlite3_close(db);
     return !count;
+}
+
+int retreive_hash(char* hex_hash, size_t buflen){
+    sqlite3 *db;
+    int conn = sqlite3_open("data/database.db", &db);
+    if (check_status(db, conn) == 1) return 1;
+
+    const char *sql_all = "SELECT master_password FROM master";
+    sqlite3_stmt *stmt;
+    conn = sqlite3_prepare_v2(db, sql_all, -1, &stmt, NULL);
+    if (check_status(db, conn) == 1) return 1;
+
+    if (sqlite3_step(stmt) == SQLITE_ROW) {
+        const unsigned char *col = sqlite3_column_text(stmt, 0);
+        if (col) {
+            strncpy(hex_hash, (const char *)col, buflen - 1);
+            hex_hash[buflen - 1] = '\0';
+        } else {
+            printf("Column empty\n");
+            sqlite3_finalize(stmt);
+            sqlite3_close(db);
+            return 1;
+        }
+    } else {
+        printf("Master password not found\n");
+        sqlite3_finalize(stmt);
+        sqlite3_close(db);
+        return 1;
+    }
+
+    sqlite3_finalize(stmt);
+    sqlite3_close(db);
+
+    return 0;
+}
+
+int retreive_salt(char* hex_salt, size_t buflen){
+    sqlite3 *db;
+    int conn = sqlite3_open("data/database.db", &db);
+    if (check_status(db, conn) == 1) return 1;
+
+    const char *sql_all = "SELECT salt FROM master";
+    sqlite3_stmt *stmt;
+    conn = sqlite3_prepare_v2(db, sql_all, -1, &stmt, NULL);
+    if (check_status(db, conn) == 1) return 1;
+    
+    if (sqlite3_step(stmt) == SQLITE_ROW) {
+        const unsigned char *col = sqlite3_column_text(stmt, 0);
+        if (col) {
+            strncpy(hex_salt, (const char *)col, buflen - 1);
+            hex_salt[buflen - 1] = '\0';
+        } else {
+            printf("Column empty\n");
+            sqlite3_finalize(stmt);
+            sqlite3_close(db);
+            return 1;
+        }
+    } else {
+        printf("Master password not found\n");
+        sqlite3_finalize(stmt);
+        sqlite3_close(db);
+        return 1;
+    }
+
+    sqlite3_finalize(stmt);
+    sqlite3_close(db);
+
+    return 0;
 }
 
 int store_hash(const char *salt, const char *hash){

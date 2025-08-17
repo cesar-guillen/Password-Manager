@@ -6,8 +6,8 @@
 #include <string.h>
 #include <openssl/evp.h>
 #include <openssl/rand.h>
-
 #include "crypto.h"
+
 char numbers[] = "0123456789";
 char letter[] = "abcdefghijklmnoqprstuvwyzx";
 char LETTER[] = "ABCDEFGHIJKLMNOQPRSTUYWVZX";
@@ -18,6 +18,25 @@ char symbols[] = "!@#$^&*?";
 #define U_LETTERS_SET_SIZE strlen(LETTER)
 #define SYM_SET_SIZE strlen(symbols)
 
+#define KEY_LEN 32  
+#define ITERATIONS 600000
+
+
+static int derive_key(const char *master_password, const unsigned char *salt, size_t salt_len, unsigned char *key_out) {
+    if (!PKCS5_PBKDF2_HMAC(master_password, strlen(master_password),
+                           salt, salt_len,
+                           ITERATIONS,
+                           EVP_sha256(),
+                           KEY_LEN, key_out)) {
+        return 1;
+    }
+    return 0;
+}
+
+
+void wipe_mem(char *memory, size_t mem_len){
+    OPENSSL_cleanse(memory, mem_len);
+}
 
 // taken from https://www.geeksforgeeks.org/dsa/random-password-generator-in-c/
 // Function to randomly generates password
@@ -101,17 +120,17 @@ void to_hex(const unsigned char *in, size_t len, char *out) {
 }
 
 int generate_salt(unsigned char *salt){
-    if (RAND_bytes(salt, sizeof(salt)) != 1) {
+    if (RAND_bytes(salt, SALT_LEN) != 1) {
         fprintf(stderr, "Error generating random salt\n");
         return 1;
     }
     return 0;
 }
 
-int generate_hash(unsigned char *salt, unsigned char *hash, const char *master_pass){
+int generate_hash(unsigned char *salt, unsigned char *hash, const char *master_pass, size_t iterations){
     if (!PKCS5_PBKDF2_HMAC(master_pass, strlen(master_pass),
                            salt, SALT_LEN,
-                           100000, // iterations
+                           iterations, 
                            EVP_sha512(),
                            HASH_LEN, hash)) {
         fprintf(stderr, "Error in PBKDF2\n");

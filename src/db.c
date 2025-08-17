@@ -59,7 +59,7 @@ int is_new_user() {
     return !count;
 }
 
-int retreive_hash(char* hex_hash, size_t buflen){
+int retreive_hash_string(char *buf, size_t buflen){
     sqlite3 *db;
     int conn = sqlite3_open("data/database.db", &db);
     if (check_status(db, conn) == 1) return 1;
@@ -68,52 +68,11 @@ int retreive_hash(char* hex_hash, size_t buflen){
     sqlite3_stmt *stmt;
     conn = sqlite3_prepare_v2(db, sql_all, -1, &stmt, NULL);
     if (check_status(db, conn) == 1) return 1;
-
-    if (sqlite3_step(stmt) == SQLITE_ROW) {
-        const unsigned char *col = sqlite3_column_text(stmt, 0);
-        if (col) {
-            strncpy(hex_hash, (const char *)col, buflen - 1);
-            hex_hash[buflen - 1] = '\0';
-        } else {
-            printf("Column empty\n");
-            sqlite3_finalize(stmt);
-            sqlite3_close(db);
-            return 1;
-        }
-    } else {
-        printf("Master password not found\n");
-        sqlite3_finalize(stmt);
-        sqlite3_close(db);
-        return 1;
-    }
-
-    sqlite3_finalize(stmt);
-    sqlite3_close(db);
-
-    return 0;
-}
-
-int retreive_salt(char* hex_salt, size_t buflen){
-    sqlite3 *db;
-    int conn = sqlite3_open("data/database.db", &db);
-    if (check_status(db, conn) == 1) return 1;
-
-    const char *sql_all = "SELECT salt FROM master";
-    sqlite3_stmt *stmt;
-    conn = sqlite3_prepare_v2(db, sql_all, -1, &stmt, NULL);
-    if (check_status(db, conn) == 1) return 1;
     
     if (sqlite3_step(stmt) == SQLITE_ROW) {
         const unsigned char *col = sqlite3_column_text(stmt, 0);
-        if (col) {
-            strncpy(hex_salt, (const char *)col, buflen - 1);
-            hex_salt[buflen - 1] = '\0';
-        } else {
-            printf("Column empty\n");
-            sqlite3_finalize(stmt);
-            sqlite3_close(db);
-            return 1;
-        }
+        strncpy(buf, (const char *)col, buflen - 1);
+        buf[buflen - 1] = '\0';
     } else {
         printf("Master password not found\n");
         sqlite3_finalize(stmt);
@@ -127,20 +86,20 @@ int retreive_salt(char* hex_salt, size_t buflen){
     return 0;
 }
 
-int store_hash(const char *salt, const char *hash){
+int store_hash(const char *stored_hash){
     sqlite3 *db;
     int conn = sqlite3_open("data/database.db", &db);
     if (check_status(db, conn) == 1) return 1;
 
-    const char *sql_qry ="INSERT INTO master (salt, master_password, last_changed) "
-    "VALUES (?, ?, DATETIME('now'))";
+    const char *sql_qry =
+        "INSERT INTO master (master_password, last_changed) "
+        "VALUES (?, DATETIME('now'))";
     sqlite3_stmt *stmt;
 
     conn = sqlite3_prepare_v2(db, sql_qry, -1, &stmt, NULL);
     if (check_status(db, conn) == 1) return 1;
 
-    sqlite3_bind_text(stmt, 1, salt, -1, SQLITE_STATIC);
-    sqlite3_bind_text(stmt, 2, hash, -1, SQLITE_STATIC);
+    sqlite3_bind_text(stmt, 1, stored_hash, -1, SQLITE_STATIC);
 
     if (sqlite3_step(stmt) != SQLITE_DONE) {
         fprintf(stderr, "Failed to insert data: %s\n", sqlite3_errmsg(db));
@@ -152,7 +111,6 @@ int store_hash(const char *salt, const char *hash){
     sqlite3_close(db);
     return 0;
 }
-
 
 int add_password(){
     char service[MAX_INPUT_LENGTH];
@@ -234,7 +192,7 @@ int list_password() {
     }
     if (check_status(db, conn) == 1) return 1;
 
-    printf("\n%-18s %-18s %-28s %-20s\n", "Service", "Username", "Password", "Last Changed");
+    printf("\n%-18s %-18s %-28s %-20s\n", "Service", "Username", "Password", "Last Changed (UTC)");
     printf("---------------------------------------------------------------------------------------\n");
 
     while (sqlite3_step(stmt) == SQLITE_ROW) {
@@ -290,7 +248,7 @@ int delete_password() {
     return 0;
 }
 
-int edit_password(char *service){
+static int edit_password(char *service){
     char new_password[MAX_INPUT_LENGTH];
     printf("Enter new password (Leave blank to autogenerate): ");
     read_line(new_password, sizeof(new_password));
@@ -321,7 +279,7 @@ int edit_password(char *service){
     return 0;
 }
 
-int edit_service(char *service){
+static int edit_service(char *service){
     char new_service[MAX_INPUT_LENGTH];
 
     do
@@ -351,7 +309,7 @@ int edit_service(char *service){
     return 0;
 }
 
-int edit_username(char *service){
+static int edit_username(char *service){
     char new_username[MAX_INPUT_LENGTH];
     printf("Enter new username: ");
     read_line(new_username, sizeof(new_username));
@@ -377,7 +335,7 @@ int edit_username(char *service){
     return 0;
 }
 
-int edit_all(char *service){
+static int edit_all(char *service){
     edit_username(service);
     edit_password(service);
     edit_service(service);
@@ -421,7 +379,7 @@ int database_init(){
     conn = sqlite3_exec(db, sql_qry, 0, 0, &err_msg);
     if (check_status(db, conn) == 1) return 1;
     sql_qry = "CREATE TABLE IF NOT EXISTS master"
-        "(id INTEGER PRIMARY KEY, salt TEXT, master_password TEXT, last_changed TEXT);"; 
+        "(id INTEGER PRIMARY KEY, master_password TEXT, last_changed TEXT);"; 
     conn = sqlite3_exec(db, sql_qry, 0, 0, &err_msg);
     if (check_status(db, conn) == 1) return 1;
 

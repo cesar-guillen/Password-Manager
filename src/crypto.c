@@ -22,18 +22,6 @@ char symbols[] = "!@#$^&*?";
 #define ITERATIONS 600000
 
 
-static int derive_key(const char *master_password, const unsigned char *salt, size_t salt_len, unsigned char *key_out) {
-    if (!PKCS5_PBKDF2_HMAC(master_password, strlen(master_password),
-                           salt, salt_len,
-                           ITERATIONS,
-                           EVP_sha256(),
-                           KEY_LEN, key_out)) {
-        return 1;
-    }
-    return 0;
-}
-
-
 void wipe_mem(char *memory, size_t mem_len){
     OPENSSL_cleanse(memory, mem_len);
 }

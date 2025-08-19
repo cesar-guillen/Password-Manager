@@ -6,26 +6,35 @@
 #include "db.h"
 #include "crypto.h"
 
-int create_master_password(){
-    char master_pass[MAX_INPUT_LENGTH];
-    double pass_entropy = 0;
+int create_master_password(char *master_pass){
     printf("First time user detected. Please enter your master password:\n");
     read_line(master_pass, MAX_INPUT_LENGTH);
-    pass_entropy = check_password_entropy(master_pass);
 
+    double pass_entropy = check_password_entropy(master_pass);
     while (pass_entropy < MIN_ENTROPY)
     {
         printf("Password is too weak. Try to increase the length or the complexity of the password:\n");
-        read_line(master_pass, sizeof(master_pass));
+        read_line(master_pass, MAX_INPUT_LENGTH);
         pass_entropy = check_password_entropy(master_pass);
     } 
+
+    char master_pass_vrfy[MAX_INPUT_LENGTH];
+    printf("Please enter your password again:\n");
+    read_line(master_pass_vrfy, MAX_INPUT_LENGTH);
+
+    if (strncmp(master_pass, master_pass_vrfy, strlen(master_pass)))
+    {
+        printf("Passwords do not match.\n\n");
+        create_master_password(master_pass);
+        return 0;
+    }
     
     unsigned char salt[SALT_LEN];
     unsigned char hash[HASH_LEN];
     if (generate_salt(salt) == 1) return 1;
     if (generate_hash(salt, hash, master_pass, PBKDF2_ITERATIONS) == 1) return 1;
 
-    wipe_mem(master_pass, sizeof(master_pass));
+    wipe_mem(master_pass_vrfy, sizeof(master_pass_vrfy));
 
     char hex_salt[HEX_SALT_LEN];
     char hex_hash[HEX_HASH_LEN];
@@ -42,7 +51,7 @@ int create_master_password(){
 
 int verify_master_passwd(char *master_pass){
     printf("Please enter your master password to continue:\n");
-    read_line(master_pass, MAX_INPUT_LENGTH);
+    read_password_masked(master_pass, MAX_INPUT_LENGTH);
 
     char stored_hash[1024];
     if (retreive_hash_string(stored_hash, sizeof(stored_hash)) == 1) return 1;
@@ -86,20 +95,17 @@ int verify_master_passwd(char *master_pass){
 }
 
 
-int determine_option(char *option){
-    size_t option_len = strlen(option);
-    if((((strncmp(option, "-h", option_len) == 0) || (strncmp(option, "--help", option_len) == 0)))) {
-        print_help();
-        return 0;   
-    }
-    char master_pass[MAX_INPUT_LENGTH];
-    int password_not_verified = 1;
-    while (password_not_verified)
-    {
-        password_not_verified = verify_master_passwd(master_pass);
+int determine_option(char *option, char* master_pass){
+
+    if(strlen(master_pass) == 0){ // user has not created the pass in this run
+        int password_not_verified = 1;
+        while (password_not_verified)
+        {
+            password_not_verified = verify_master_passwd(master_pass);
+        }
     }
     if (passwords_db_init(master_pass) != 0) return 1;
-    
+    size_t option_len = strlen(option);
     if(strncmp(option, "-a", option_len) == 0) return add_password(master_pass);
     else if(strncmp(option, "-l", option_len) == 0) return list_password(master_pass);
     else if(strncmp(option, "-d", option_len) == 0) return delete_password(master_pass);
@@ -110,6 +116,7 @@ int determine_option(char *option){
         print_help();
         return 0;
     }
+    wipe_mem(master_pass, sizeof(master_pass));
 }
 
 
@@ -120,12 +127,19 @@ int main(int argc, char *argv[]){
         print_help();
         return 0;
     }
+    size_t option_len = strlen(argv[1]);
+    if((((strncmp(argv[1], "-h", option_len) == 0) || (strncmp(argv[1], "--help", option_len) == 0)))) {
+        print_help();
+        return 0;   
+    }
 
+    char master_pass[MAX_INPUT_LENGTH] = {0};
     if (is_new_user()){
-        if(create_master_password() == 1) return 1;
+        if(create_master_password(master_pass) == 1) return 1;
     } 
     if(argc > 1){
-       return determine_option(argv[1]);
+       return determine_option(argv[1], master_pass);
     }
+    
     return 0;
 }

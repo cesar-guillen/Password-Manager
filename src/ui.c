@@ -1,5 +1,8 @@
 #include <stdio.h>
 #include <string.h>
+#include <termios.h>
+#include <unistd.h>
+
 void print_art(){
     printf(
             " ___                                  _   __ __                               \n"
@@ -21,6 +24,36 @@ void print_help(){
             "-m                  Edit a password\n"
             "\n"
     );
+}
+
+void read_password_masked(char *buffer, size_t size) {
+    struct termios oldt, newt;
+    size_t i = 0;
+    char c;
+
+    tcgetattr(STDIN_FILENO, &oldt);
+    newt = oldt;
+    newt.c_lflag &= ~(ECHO | ICANON);
+    tcsetattr(STDIN_FILENO, TCSANOW, &newt);
+
+    while (i < size - 1 && read(STDIN_FILENO, &c, 1) == 1 && c != '\n') {
+        if (c == 127 || c == '\b') { // handle backspace
+            if (i > 0) {
+                i--;
+                printf("\b \b"); 
+                fflush(stdout);
+            }
+        } else {
+            buffer[i++] = c;
+            printf("*");
+            fflush(stdout);
+        }
+    }
+    buffer[i] = '\0';
+
+    // Restore terminal settings
+    tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
+    printf("\n");
 }
 
 void read_line(char *buffer, size_t size) {

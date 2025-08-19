@@ -1,9 +1,13 @@
 
 # Password Manager
 
-Password Manager is a secure, command-line application written in C for managing your credentials. It provides strong encryption for your password database using SQLCipher and OpenSSL, and ensures your master password is checked for strength and securely stored. The app is designed for simplicity, security, and portability, making it ideal for users who want a lightweight, offline password manager.
+A password manager for securely storing your passwords locally. This project was built with a strong focus on security. The password manager allows you to add, edit, view, and delete passwords. When adding a password, you must provide a service name, which is later used to edit or delete the corresponding entry.
 
-![test](media/sample_run.gif)
+The application also includes an option to auto-generate strong, secure passwords. The master password is stored in a database as a securely hashed value, using a hashing algorithm with a high number of iterations to slow down dictionary attacks. Additionally, the master password is validated to ensure it has sufficient entropy to resist brute-force attempts.
+
+User passwords are stored in an SQLite database encrypted with the master password using ![SQLCipher](https://www.zetetic.net/sqlcipher/). SQLCipher is a fork of SQLite that provides AES-256 encryption to secure the database.
+
+
 ## General Overview
 After launching the app, you will be prompted to set or enter your master password. Once authenticated, you can store, retrieve, update, and delete passwords for various services. All sensitive data is encrypted and only accessible after successful authentication.
 
@@ -17,13 +21,7 @@ After launching the app, you will be prompted to set or enter your master passwo
 - **Password Entropy Check:** Ensure your master password meets minimum strength requirements.
 - **Secure Storage:** All passwords and master credentials are encrypted using SQLCipher.
 
-
-## Features
-- Master password authentication
-- Password entropy check
-- Encrypted password database (SQLCipher)
-- Secure password storage and retrieval
-- Simple command-line interface
+![sample](media/sample_run.gif)
 
 
 ## Requirements
@@ -48,7 +46,7 @@ After launching the app, you will be prompted to set or enter your master passwo
 ## Usage
 1. Run the password manager:
 	```sh
-	./passmgr
+	./passmgr -h
 	```
 2. On first run, set your master password.
 3. Use the CLI to add, retrieve, and manage passwords securely.

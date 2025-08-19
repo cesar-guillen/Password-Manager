@@ -3,7 +3,7 @@
 
 Password Manager is a secure, command-line application written in C for managing your credentials. It provides strong encryption for your password database using SQLCipher and OpenSSL, and ensures your master password is checked for strength and securely stored. The app is designed for simplicity, security, and portability, making it ideal for users who want a lightweight, offline password manager.
 
-!()
+![test](media/sample_run.gif)
 ## General Overview
 After launching the app, you will be prompted to set or enter your master password. Once authenticated, you can store, retrieve, update, and delete passwords for various services. All sensitive data is encrypted and only accessible after successful authentication.
 
